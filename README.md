@@ -1,4 +1,4 @@
-# Data streaming with goroutines and channels
+# Event management with goroutines and channels
 
 This application simulates a producer-consumer interaction through goroutines and channels. In order to show the different ways of using the Goroutine concept; 
 fan in / fan out and semaphore patterns have been used at different points of the flow.
