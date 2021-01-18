@@ -50,12 +50,13 @@ func main() {
 
 	log.Printf("Process is starting with %d worker...\n", *numberOfWorker)
 
-	//mainstream channel is the main channel that carries events from producer to consumer.It receives data during the Fan In operation
+	//mainstream channel is the main channel that carries events from producer to consumer. It receives events during the Fan In operation
 	mainStream := make(chan string)
 	//closeSignal is managed by consumer and It blocks until consumer sends close signal over it
 	closeSignal := make(chan struct{})
 
-	//circuitBreaker connects all stages in the pipeline and ensures all working goroutines stopped and open channels are closed, after closing signal
+	//circuitBreaker connects all stages in the pipeline and ensures all working goroutines stopped and open channels closed, after close signal
+	//It is expected that close signal will always be sent from main function defer method
 	//Main purpose here is to prevent memory leak, because goroutines are not garbage collected; they must exit on their own.
 	circuitBreaker := make(chan struct{})
 	defer func() {
