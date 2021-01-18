@@ -5,11 +5,11 @@ fan in / fan out and semaphore patterns have been used at different points of th
 
 ## Run
 
-`go run . -worker-number={number_of_worker}` starts the application with a number of worker which is passed in a parameter. If parameter is skipped, 1 worker will be run as default. 
+`go run . -worker-number={number_of_worker}` starts the application with a number of worker which is passed in the parameter. If parameter is skipped, 1 worker will be run as default. 
 
 ## Test
 
-`go test -bench . -worker-number={number_of_worker}` runs benchmark tests with a number of worker which is passed in a parameter. If parameter is skipped, 1 worker will be run as default.
+`go test -bench . -worker-number={number_of_worker}` runs benchmark tests with a number of worker which is passed in the parameter. If parameter is skipped, 1 worker will be run as default.
 
 ## How it works:
 
