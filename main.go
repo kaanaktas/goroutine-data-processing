@@ -100,7 +100,7 @@ func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, ci
 						log.Printf("error reading the file %q: %v\n", filePath, err)
 					}
 
-					streamData(strings.Split(string(consent), "\n"), fileInfo.Name(), numberOfWorker, mainStream, circuitBreaker)
+					processEvents(strings.Split(string(consent), "\n"), fileInfo.Name(), numberOfWorker, mainStream, circuitBreaker)
 				}()
 			}
 		}
@@ -117,12 +117,12 @@ func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, ci
 	}
 }
 
-func streamData(content []string, filename string, numberOfWorker int, mainStream chan<- string, circuitBreaker <-chan struct{}) {
+func processEvents(content []string, filename string, numberOfWorker int, mainStream chan<- string, circuitBreaker <-chan struct{}) {
 	in := make(chan string)
 	go func() {
 		defer func() {
 			close(in)
-			log.Printf("streamData is closed for %q. Number of Active GoRoutine: %d\n", filename, runtime.NumGoroutine())
+			log.Printf("processEvents is closed for %q. Number of Active GoRoutine: %d\n", filename, runtime.NumGoroutine())
 		}()
 
 		for _, c := range content {
