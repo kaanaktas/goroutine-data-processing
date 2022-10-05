@@ -39,4 +39,4 @@ Once the trace file is created, then it can be analyzed with `go tool trace mem-
 ## CPU profile
 
 `go run . -cpu-profile` will create a memory profile file which can be similar with **cpu-{id}.pprof**
-Once the trace file is created, then it can be analyzed with `go tool trace mem-{id}.trace` This command will open a browser and show every detail of memory.
+Once the trace file is created, then it can be analyzed with `go tool trace mem-{id}.trace` This command will open a browser and show every detail of cpu.
