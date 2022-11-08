@@ -55,23 +55,23 @@ func main() {
 	//closeSignal is managed by consumer and It blocks until consumer sends close signal over it
 	closeSignal := make(chan struct{})
 
-	//circuitBreaker connects all stages in the pipeline and ensures all working goroutines stopped and open channels closed, after close signal
+	//breaker connects all stages in the pipeline and ensures all working goroutines stopped and open channels closed, after close signal
 	//It is expected that close signal will always be sent from main function defer method
 	//Main purpose here is to prevent memory leak, because goroutines are not garbage collected; they must exit on their own.
-	circuitBreaker := make(chan struct{})
+	breaker := make(chan struct{})
 	defer func() {
-		close(circuitBreaker)
-		log.Println("circuitBreaker is closed. Number of Active GoRoutine:", runtime.NumGoroutine())
+		close(breaker)
+		log.Println("breaker is closed. Number of Active GoRoutine:", runtime.NumGoroutine())
 	}()
 
-	go producer(inputDir, *numberOfWorker, mainStream, circuitBreaker)
+	go producer(inputDir, *numberOfWorker, mainStream, breaker)
 
 	go consumer(mainStream, closeSignal)
 
 	<-closeSignal
 }
 
-func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, circuitBreaker <-chan struct{}) {
+func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, breaker <-chan struct{}) {
 	defer func() {
 		close(mainStream)
 		log.Println("mainStream is closed. Number of Active GoRoutine:", runtime.NumGoroutine())
@@ -100,7 +100,7 @@ func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, ci
 						log.Printf("error reading the file %q: %v\n", filePath, err)
 					}
 
-					processEvents(strings.Split(string(consent), "\n"), fileInfo.Name(), numberOfWorker, mainStream, circuitBreaker)
+					processEvents(strings.Split(string(consent), "\n"), fileInfo.Name(), numberOfWorker, mainStream, breaker)
 				}()
 			}
 		}
@@ -117,7 +117,7 @@ func producer(sourceDir string, numberOfWorker int, mainStream chan<- string, ci
 	}
 }
 
-func processEvents(content []string, filename string, numberOfWorker int, mainStream chan<- string, circuitBreaker <-chan struct{}) {
+func processEvents(content []string, filename string, numberOfWorker int, mainStream chan<- string, breaker <-chan struct{}) {
 	in := make(chan string)
 	go func() {
 		defer func() {
@@ -137,13 +137,13 @@ func processEvents(content []string, filename string, numberOfWorker int, mainSt
 	var workerList = make([]<-chan string, numberOfWorker)
 	for i := 0; i < numberOfWorker; i++ {
 		wName := fmt.Sprintf("w%d_%s", i+1, filename)
-		workerList[i] = worker(wName, in, circuitBreaker)
+		workerList[i] = worker(wName, in, breaker)
 	}
 
-	mergeWorkers(workerList, mainStream, circuitBreaker)
+	mergeWorkers(workerList, mainStream, breaker)
 }
 
-func worker(name string, in <-chan string, circuitBreaker <-chan struct{}) <-chan string {
+func worker(name string, in <-chan string, breaker <-chan struct{}) <-chan string {
 	out := make(chan string)
 	go func() {
 		defer func() {
@@ -156,7 +156,7 @@ func worker(name string, in <-chan string, circuitBreaker <-chan struct{}) <-cha
 			if err == nil {
 				select {
 				case out <- res:
-				case <-circuitBreaker:
+				case <-breaker:
 					return
 				}
 			}
@@ -166,7 +166,7 @@ func worker(name string, in <-chan string, circuitBreaker <-chan struct{}) <-cha
 	return out
 }
 
-func mergeWorkers(cs []<-chan string, mainStream chan<- string, circuitBreaker <-chan struct{}) {
+func mergeWorkers(cs []<-chan string, mainStream chan<- string, breaker <-chan struct{}) {
 	var wg sync.WaitGroup
 	wg.Add(len(cs))
 
@@ -179,7 +179,7 @@ func mergeWorkers(cs []<-chan string, mainStream chan<- string, circuitBreaker <
 			for n := range ct {
 				select {
 				case mainStream <- n:
-				case <-circuitBreaker:
+				case <-breaker:
 					return
 				}
 			}
